@@ -1,0 +1,57 @@
+name: Build CMD Simulator
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build exe with PyInstaller
+      run: |
+        pyinstaller --onefile --windowed --icon=icon.ico src/main.py -n "CMD_Simulator"
+    
+    - name: Upload Release
+      uses: actions/upload-artifact@v3
+      with:
+        name: CMD_Simulator.exe
+        path: dist/CMD_Simulator.exe
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: CMD Simulator ${{ github.ref }}
+        draft: false
+        prerelease: false
+    
+    - name: Upload to Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/CMD_Simulator.exe
+        asset_name: CMD_Simulator.exe
+        asset_content_type: application/octet-stream
